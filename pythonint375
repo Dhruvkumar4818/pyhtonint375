@@ -1,0 +1,206 @@
+# LOGISTICS BUSINESS INTELLIGENCE USING DATA ANALYTICS & ML
+# FINAL CODE ACCORDING TO YOUR EXACT DATASET
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+
+# LOAD DATASET
+
+df = pd.read_excel(
+    r"C:\Users\abhi2\Downloads\Book1.xlsx",
+    header=0
+)
+
+
+# CLEAN COLUMN NAMES
+
+df.columns = df.columns.str.strip().str.upper()
+
+print("ALL COLUMNS:")
+print(df.columns.tolist())
+
+
+
+
+
+df = df.loc[:, ~df.columns.duplicated()]
+
+
+# CONVERT NUMERIC COLUMNS
+
+num_cols = ['WEIGHT','REVENUE','EXPENSES','PROFIT']
+
+for col in num_cols:
+    df[col] = (
+        df[col]
+        .astype(str)
+        .str.replace(',', '', regex=False)
+        .str.strip()
+    )
+    df[col] = pd.to_numeric(df[col], errors='coerce')
+
+
+# DATE COLUMN
+
+df['SHIPMENT DATE'] = pd.to_datetime(df['SHIPMENT DATE'], errors='coerce')
+
+
+# CLEAN DATA
+
+df.fillna(0, inplace=True)
+df.drop_duplicates(inplace=True)
+
+print(df.head())
+print(df.info())
+
+# OBJECTIVE 1
+# TOTAL REVENUE / EXPENSES / PROFIT
+
+print("\nTotal Revenue :", df['REVENUE'].sum())
+print("Total Expenses :", df['EXPENSES'].sum())
+print("Total Profit :", df['PROFIT'].sum())
+
+
+
+
+# OBJECTIVE 2
+# TOP 10 CUSTOMERS
+
+top_customer = df.groupby('PARTY')['REVENUE'].sum().sort_values(ascending=False).head(10)
+
+plt.figure(figsize=(12,6))
+top_customer.plot(kind='bar', color='orange')
+plt.title("Top 10 Customers by Revenue")
+plt.grid(True)
+plt.show()
+
+
+
+# OBJECTIVE 3
+# DEPARTMENT WISE PROFIT
+
+dept = df.groupby('DEPARTMENT')['PROFIT'].sum()
+
+plt.figure(figsize=(8,8))
+dept.plot(kind='pie', autopct='%1.1f%%')
+plt.title("Department Wise Profit")
+plt.ylabel("")
+plt.show()
+
+
+# HISTOGRAM
+
+plt.figure(figsize=(8,5))
+df['PROFIT'].hist(bins=20, color='purple')
+plt.title("Profit Distribution")
+plt.grid(True)
+plt.show()
+
+# NORMALIZATION
+df_ml = df[['WEIGHT','REVENUE','EXPENSES','PROFIT']].copy()
+
+# NORMALIZATION ONLY FOR ML
+scaler = MinMaxScaler()
+df_ml[['WEIGHT','REVENUE','EXPENSES','PROFIT']] = scaler.fit_transform(df_ml)
+
+# OBJECTIVE 4
+# MONTHLY REVENUE TREND
+
+df['MONTH'] = df['SHIPMENT DATE'].dt.month
+
+monthly = df.groupby('MONTH')['REVENUE'].sum()
+
+plt.figure(figsize=(10,5))
+monthly.plot(marker='o', linewidth=3)
+plt.title("Monthly Revenue Trend")
+plt.grid(True)
+plt.show()
+
+
+# OBJECTIVE 5
+# CCU WISE PERFORMANCE
+
+ccu = df.groupby('CCU')[['REVENUE','PROFIT']].sum()
+
+ccu.plot(kind='bar', figsize=(10,5))
+plt.title("CCU Wise Revenue & Profit")
+plt.grid(True)
+plt.show()
+
+
+# OBJECTIVE 6
+# BRANCH WISE PROFIT
+
+branch = df.groupby('BRANCH')['PROFIT'].sum()
+
+branch.plot(kind='bar', figsize=(10,5), color='green')
+plt.title("Branch Wise Profit")
+plt.grid(True)
+plt.show()
+
+
+# OBJECTIVE 7
+# STATUS WISE SHIPMENTS
+
+status = df['STATUS'].value_counts()
+
+status.plot(kind='bar', figsize=(8,5), color='red')
+plt.title("Shipment Status Count")
+plt.grid(True)
+plt.show()
+
+
+# OBJECTIVE 8
+# WEIGHT VS PROFIT
+
+plt.figure(figsize=(8,5))
+plt.scatter(df['WEIGHT'], df['PROFIT'])
+plt.title("Weight vs Profit")
+plt.xlabel("Weight")
+plt.ylabel("Profit")
+plt.grid(True)
+plt.show()
+
+
+# MACHINE LEARNING MODEL
+
+X = df_ml[['REVENUE','EXPENSES','WEIGHT']]
+y = df_ml['PROFIT']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.20, random_state=42
+)
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+
+
+# MODEL RESULT
+
+print("\nMSE :", mean_squared_error(y_test, y_pred))
+print("RMSE :", np.sqrt(mean_squared_error(y_test, y_pred)))
+print("MAE :", mean_absolute_error(y_test, y_pred))
+print("R2 Score :", r2_score(y_test, y_pred))
+
+
+# HEATMAP
+
+plt.figure(figsize=(12,8))
+sns.heatmap(df.corr(numeric_only=True), annot=True, cmap='coolwarm')
+plt.title("Correlation Heatmap")
+plt.show()
+
+
+
+print("\nPROJECT COMPLETED SUCCESSFULLY")
